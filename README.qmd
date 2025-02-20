@@ -1,0 +1,74 @@
+---
+format: gfm
+title: "Getting and using origin-destination data from the 2021 Census in England for reproducible research"
+author:
+  - Robin Lovelace
+---
+
+# Pre-requisites
+
+```{r}
+library(tidyverse)
+```
+
+# Downloading the data
+
+The datasets are available from WICID:
+
+1.  Click on the Downloads section
+
+2.  Log-in with your institutional credentials, you should then see something like this:
+
+![](images/paste-1.png)
+
+3.  Continue and click on the [**2021 Census England & Wales - Safeguarded**](https://wicid.ukdataservice.ac.uk/cider/wicid/downloads.php#panel17) section, and search for "method of travel", you should see [ODWP02EW_MSOA](https://wicid.ukdataservice.ac.uk/cider/wicid/downloads.php#) as an option.
+4.  Click on the download button and put the .zip file in the working directory of your project.
+5.  Run the following command to read-in the file:
+
+
+```{r}
+# Check you have the right file
+list.files(pattern = "zip") 
+od_2021 = read_csv("ODWP02EW_MSOA_v1.zip")
+# names(od_2021)
+# [1] "Middle layer Super Output Areas code"                    
+# [2] "Middle layer Super Output Areas label"                   
+# [3] "MSOA of workplace code"                                  
+# [4] "MSOA of workplace label"                                 
+# [5] "Method used to travel to workplace (12 categories) code" 
+# [6] "Method used to travel to workplace (12 categories) label"
+# [7] "Count"
+# Clean the column names
+# Keep only the columns we need:
+od_2021 = od_2021[c(1, 3, 6, 7)]
+names(od_2021) = c(
+  "o",
+  "d",
+  "method",
+  "count"
+)
+# od_2021 |>
+#   group_by(method) |>
+#   summarise(n = sum(count))
+# # A tibble: 12 × 2
+#    method                                              n
+#    <chr>                                           <dbl>
+#  1 Bicycle                                        569068
+#  2 Bus, minibus or coach                         1160957
+#  3 Driving a car or van                         12524712
+#  4 Motorcycle, scooter or moped                   128524
+#  5 Not in employment or aged 15 years and under 20792674
+#  6 On foot                                       2113300
+#  7 Other method of travel to work                 285653
+#  8 Passenger in a car or van                     1083220
+#  9 Taxi                                           200289
+# 10 Train                                          528653
+# 11 Underground, metro, light rail, tram           505001
+# 12 Work mainly at or from home                   8671774
+od_2021_wide = od_2021 |>
+  pivot_wider(names_from = method, values_from = count, values_fill = 0)
+od_2021_wide |>
+  head() |>
+  knitr::kable()
+```
+
