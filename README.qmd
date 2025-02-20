@@ -23,6 +23,9 @@ The datasets are available from WICID:
 
 3.  Continue and click on the [**2021 Census England & Wales - Safeguarded**](https://wicid.ukdataservice.ac.uk/cider/wicid/downloads.php#panel17) section, and search for "method of travel", you should see [ODWP02EW_MSOA](https://wicid.ukdataservice.ac.uk/cider/wicid/downloads.php#) as an option.
 4.  Click on the download button and put the .zip file in the working directory of your project.
+
+# Importing and cleaning the OD data
+
 5.  Run the following command to read-in the file:
 
 
@@ -65,10 +68,52 @@ names(od_2021) = c(
 # 10 Train                                          528653
 # 11 Underground, metro, light rail, tram           505001
 # 12 Work mainly at or from home                   8671774
+# Shorten the method names
+od_2021 = od_2021 |>
+  filter(!str_detect(method, "Not in employment")) |>
+  mutate(
+    method = case_when(
+      method == "Bus, minibus or coach" ~ "Bus",
+      method == "Driving a car or van" ~ "Car",
+      method == "Motorcycle, scooter or moped" ~ "Motorcycle",
+      method == "On foot" ~ "Walking",
+      method == "Other method of travel to work" ~ "Other",
+      method == "Passenger in a car or van" ~ "Passenger",
+      method == "Underground, metro, light rail, tram" ~ "Metro",
+      method == "Work mainly at or from home" ~ "Home",
+      TRUE ~ method
+    )
+  )
 od_2021_wide = od_2021 |>
   pivot_wider(names_from = method, values_from = count, values_fill = 0)
 od_2021_wide |>
   head() |>
   knitr::kable()
+```
+
+# Getting the zone dataset
+
+You can get MSOA boundary datasets from a few different sources.
+
+```{r}
+#| label: od-data-2021-england
+u_msoa_2021 = "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Middle_Super_Output_Areas_DEC_2021_EW_PWC/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson"
+msoas = sf::read_sf(u_msoa_2021)
+# Keep only the id column
+msoas = msoas[2]
+# % trips by car:
+od_2021_wide = od_2021_wide |>
+  mutate(
+    `% Car` = Car / (Car + Bus + Bicycle + Motorcycle + Walking + Other + Passenger + Metro + Taxi + Train + Home)
+  )
+od_2021_sf = od::od_to_sf(od_2021_wide, msoas)
+od_2021_sf$length = sf::st_length(od_2021_sf) |> as.numeric()
+od_2021_sf |>
+  filter(Car > 10 & length > 10 * 1000) |>
+  arrange(desc(`% Car`)) |>
+  ggplot() +
+  geom_sf(aes(colour = `% Car`)) +
+  scale_colour_viridis_c(direction = -1) +
+  theme_minimal()
 ```
 
