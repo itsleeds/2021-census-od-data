@@ -8,6 +8,7 @@ author:
 # Pre-requisites
 
 ```{r}
+# install.packages("tidyverse")
 library(tidyverse)
 ```
 
@@ -32,6 +33,8 @@ The datasets are available from WICID:
 ```{r}
 # Check you have the right file
 list.files(pattern = "zip") 
+# If you've downloaded the file to ~/Downloads
+# file.copy("~/Downloads/ODWP02EW_MSOA_v1.zip", ".")
 od_2021 = read_csv("ODWP02EW_MSOA_v1.zip")
 # names(od_2021)
 # [1] "Middle layer Super Output Areas code"                    
